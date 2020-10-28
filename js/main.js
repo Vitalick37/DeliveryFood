@@ -1,3 +1,5 @@
+'use strict';
+
 const cartButton = document.querySelector("#cart-button");
 const modal = document.querySelector(".modal");
 const close = document.querySelector(".close");
@@ -17,7 +19,7 @@ let login = localStorage.getItem('Delivery');       //заполняет пол�
 const buttonAuth = document.querySelector('.button-auth'),
       modalAuth = document.querySelector('.modal-auth'),
       closeAuth = document.querySelector('.close-auth'),
-      logInForm = document.querySelector('#logInForm');
+      logInForm = document.querySelector('#logInForm'),
       loginInput = document.querySelector('#login'),
       userName = document.querySelector('.user-name'),
       buttonOut = document.querySelector('.button-out');
@@ -96,3 +98,94 @@ let checkAuth = () => {
   }
 };
 checkAuth();
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+///////////////////рендеринг карточек магазинов и товаров////////////////////////////////
+
+const cardsRestaurants = document.querySelector('.cards-restaurants'),
+      containerPromo = document.querySelector('.container-promo'),
+      restaurants = document.querySelector('.restaurants'),
+      menu = document.querySelector('.menu'),
+      logo = document.querySelector('.logo'),
+      cardsMenu = document.querySelector('.cards-menu');
+
+function creatCardRestaurants() {
+  const card = `
+                <a class="card card-restaurant">
+                <img src="img/pizza-plus/preview.jpg" alt="image" class="card-image"/>
+                <div class="card-text">
+                  <div class="card-heading">
+                    <h3 class="card-title">Пицца плюс</h3>
+                    <span class="card-tag tag">50 мин</span>
+                  </div>
+                  <div class="card-info">
+                    <div class="rating">
+                      4.5
+                    </div>
+                    <div class="price">От 900 ₽</div>
+                    <div class="category">Пицца</div>
+                  </div>
+                </div>
+                </a>
+  `;
+  cardsRestaurants.insertAdjacentHTML('beforeend', card);
+};
+creatCardRestaurants();
+
+function creatCardGood() {
+  let card = document.createElement('div');
+  card.className = 'card'
+
+  card.insertAdjacentHTML('beforeend', `
+                  <img src="img/pizza-plus/pizza-oleole.jpg" alt="image" class="card-image"/>
+                  <div class="card-text">
+                    <div class="card-heading">
+                      <h3 class="card-title card-title-reg">Пицца Оле-Оле</h3>
+                    </div>
+                    <div class="card-info">
+                      <div class="ingredients">Соус томатный, сыр «Моцарелла», черри, маслины, зелень, майонез
+                      </div>
+                    </div>
+                    <div class="card-buttons">
+                      <button class="button button-primary button-add-cart">
+                        <span class="button-card-text">В корзину</span>
+                        <span class="button-cart-svg"></span>
+                      </button>
+                      <strong class="card-price-bold">440 ₽</strong>
+                    </div>
+                  </div>
+  `);
+  cardsMenu.insertAdjacentElement('beforeend', card);
+};
+
+function openGoods (e) {                                       //функция открытия страницы товаров
+  let target = e.target;
+  let restaurant = target.closest('.card-restaurant')
+
+  if(restaurant) {
+
+      if(login) {
+        containerPromo.classList.add('hide');
+        restaurants.classList.add('hide');
+        menu.classList.remove('hide');
+    
+        cardsMenu.textContent = '';                               //очистить содержимое страницы товаров
+    
+        creatCardGood();
+      } else {
+        toggleModalAuth();
+      }
+
+
+  };
+  
+};
+
+cardsRestaurants.addEventListener('click', openGoods);         //открытие страницы товаров
+
+logo.addEventListener('click', () => {                         //возврат на страницу ресторанов
+  containerPromo.classList.remove('hide');
+  restaurants.classList.remove('hide');
+  menu.classList.add('hide');
+});
