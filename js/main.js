@@ -16,6 +16,14 @@ function toggleModal() {
 
 let login = localStorage.getItem('Delivery');       //заполняет пользователя при перезагрузки страницы
 
+//////////////////////////////валидация///////////////////////////////////////////////
+
+function validName (str) {
+  let regName = /^[a-zA-Z][a-zA-Z0-9-_\.]{1,20}$/;
+  return regName.test(str);
+}
+
+
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -98,12 +106,13 @@ function notAutorized () {
   let logIn = e => {
     e.preventDefault();
     
-    if(loginInput.value.trim()) {
+    if(validName(loginInput.value)) {
       login = loginInput.value;
 
       localStorage.setItem('Delivery', login);    //запоминает пользователя при перезагрузки страницы
   
       toggleModalAuth();
+
       buttonAuth.removeEventListener('click', toggleModalAuth);        //удаляем события чтобы небыло рекурсии
       closeAuth.removeEventListener('click', toggleModalAuth);
       logInForm.removeEventListener('submit', logIn);
