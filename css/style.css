@@ -838,3 +838,8 @@ button {
         margin-right: 0;
     }
 }
+
+.card img {
+    width: 300px;
+    height: 300px;
+}

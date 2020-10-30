@@ -4,7 +4,10 @@ const cartButton = document.querySelector("#cart-button");
 const modal = document.querySelector(".modal");
 const close = document.querySelector(".close");
 
-cartButton.addEventListener("click", toggleModal);
+cartButton.addEventListener("click", function() {
+  renderCart();
+  toggleModal();
+});
 close.addEventListener("click", toggleModal);
 
 function toggleModal() {
@@ -46,12 +49,63 @@ function init() {                                                          //ф�
   getData('./db/partners.json').then(function(data) {
 
     data.forEach(creatCardRestaurants);
-  
+
+    //////////////////////////////////поиск///////////////////////////////////////////////////////////////////////
+
+    let inputSearch = document.querySelector('.input-search');
+    inputSearch.addEventListener('keypress', e => {
+      if(e.charCode === 13) {
+        let value = e.target.value.trim();
+
+        if (!value) {
+          e.target.style.borderColor = 'red';
+          e.target.value = '';
+          setTimeout(function() {
+            e.target.style.borderColor = '';
+          }, 5500)
+          return
+        }
+
+        getData('./db/partners.json')
+        .then(function(data) {
+          return data.map(function(partner) {
+            return partner.products;
+          });
+        })
+        .then(function(param) {
+          param.forEach(function(link) {
+            cardsMenu.textContent = '';
+            getData(`./db/${link}`)
+            .then(function(data) {
+
+              let resultSearch = data.filter(function(item) {
+                let name = item.name.toLowerCase();
+                return name.includes(value.toLowerCase());
+              })
+              
+              containerPromo.classList.add('hide');
+              restaurants.classList.add('hide');
+              menu.classList.remove('hide');  
+      
+              restaurantTitle.textContent = 'Результат поиска';
+              restaurantRating.textContent = '';
+              restaurantPrice.textContent = '';
+              restaurantCategory.textContent = 'разное';
+
+              resultSearch.forEach(creatCardGood);
+            })
+              
+          })
+        })
+      };
+    }); 
+
+  ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    cardsMenu.addEventListener('click', addToCart);                         //вызов корзины
+
   });
-  getData('./db/partners.json').then(function(data) {
-console.log(data)
-    data.forEach(titleRestaurants);
-  });
+
 
 };
 init();
@@ -87,13 +141,15 @@ function authorized () {
     buttonAuth.style.display = '';
     userName.style.display = '';
     buttonOut.style.display = '';
+    cartButton.style.display = '';
     buttonOut.removeEventListener('click', logOut);
     checkAuth();
   }
 
   buttonAuth.style.display = 'none';
   userName.style.display = 'block';
-  buttonOut.style.display = 'block';
+  buttonOut.style.display = 'flex';
+  cartButton.style.display = 'flex';
 
   userName.textContent = login;
 
@@ -154,7 +210,10 @@ const cardsRestaurants = document.querySelector('.cards-restaurants'),
       menu = document.querySelector('.menu'),
       logo = document.querySelector('.logo'),
       cardsMenu = document.querySelector('.cards-menu'),
-      headingTitle = document.querySelector('.heading-title');
+      restaurantTitle = document.querySelector('.restaurant-title'),
+      restaurantRating = document.querySelector('.rating'),
+      restaurantPrice = document.querySelector('.price'),
+      restaurantCategory = document.querySelector('.category');
 
 function creatCardRestaurants(restaurant) {
 
@@ -168,8 +227,12 @@ function creatCardRestaurants(restaurant) {
     products
   } = restaurant;
 
-  const card = `
-                <a class="card card-restaurant" data-product="${products}">
+  const cardRestaurant = document.createElement('a');
+  cardRestaurant.className = 'card card-restaurant';
+  cardRestaurant.products = products;                                   //в свойство объекта записивыем значение из json
+  cardRestaurant.info = { name, stars, price, kitchen };
+
+  const card = `  
                 <img src="${image}" alt="image" class="card-image"/>
                 <div class="card-text">
                   <div class="card-heading">
@@ -184,15 +247,16 @@ function creatCardRestaurants(restaurant) {
                     <div class="category">${kitchen}</div>
                   </div>
                 </div>
-                </a>
+
   `;
-  cardsRestaurants.insertAdjacentHTML('beforeend', card);
+  cardRestaurant.insertAdjacentHTML('beforeend', card);
+  cardsRestaurants.insertAdjacentElement('beforeend', cardRestaurant);
 };
 
 
 function creatCardGood(goods) {
   let card = document.createElement('div');
-  card.className = 'card'
+  card.className = 'card';
 
   const {
     id,
@@ -213,29 +277,17 @@ function creatCardGood(goods) {
                       </div>
                     </div>
                     <div class="card-buttons">
-                      <button class="button button-primary button-add-cart">
+                      <button class="button button-primary button-add-cart" id="${id}">
                         <span class="button-card-text">В корзину</span>
                         <span class="button-cart-svg"></span>
                       </button>
-                      <strong class="card-price-bold">${price} ₽</strong>
+                      <strong class=" card-price card-price-bold">${price} ₽</strong>
                     </div>
                   </div>
   `);
   cardsMenu.insertAdjacentElement('beforeend', card);
 };
 
-function titleRestaurants({ name, time_of_delivery: timeOfDelivery, stars, price, kitchen, image, products }) {
-  const title = `
-          <h2 class="section-title restaurant-title">${name}</h2>
-          <div class="card-info">
-          <div class="rating">
-          ${stars}
-          </div>
-          <div class="price">От ${price} ₽</div>
-          <div class="category">${kitchen}</div>
-  `;
-  headingTitle.insertAdjacentHTML('beforeend', title);
-}
 
 function openGoods (e) {                                       //функция открытия страницы товаров
   let target = e.target;
@@ -248,10 +300,15 @@ function openGoods (e) {                                       //функция 
         cardsMenu.textContent = '';                             //очистить содержимое страницы товаров
         containerPromo.classList.add('hide');
         restaurants.classList.add('hide');
-        menu.classList.remove('hide');                              
+        menu.classList.remove('hide');  
+
+        const { stars, price, name, kitchen } = restaurant.info;       //записать заголовок над карточками товаров
+        restaurantTitle.textContent = name;
+        restaurantRating.textContent = stars;
+        restaurantPrice.textContent = `От ${price} ₽`;
+        restaurantCategory.textContent = kitchen;
     
-        getData(`./db/${restaurant.dataset.product}`).then(function(data) {
-          
+        getData(`./db/${restaurant.products}`).then(function(data) {
           data.forEach(creatCardGood);
         });
 
@@ -270,3 +327,120 @@ logo.addEventListener('click', () => {                         //возврат 
   menu.classList.add('hide');
 });
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+///////////////////////////////////////корзина//////////////////////////////////////////////////////////////////
+
+let cart = [];                                              //корзина
+
+function addToCart(e) {
+
+  let target = e.target;
+
+  let buttonAddToCart = target.closest('.button-add-cart');
+
+  if(buttonAddToCart) {
+    let card = target.closest('.card');
+
+    let title = card.querySelector('.card-title-reg').textContent;
+    let cost = card.querySelector('.card-price').textContent;
+    let id = buttonAddToCart.id;
+
+    let food = cart.find(function(item) {                 //поиск в массиве на совпадение товара в корзине
+      return item.id === id
+    })
+
+    if (food) {                                            //ecли товар в корзине есть, то увеличивается количество
+      food.count += 1;
+    } else {
+      cart.push({                                           //добавление в массив корзины объекта товара
+        id: id,
+        title: title,
+        cost: cost,
+        count: 1
+      })
+    }
+    
+
+
+    console.log(cart)
+  };
+};
+
+let modalBody = document.querySelector('.modal-body'),
+    modalPricetag = document.querySelector('.modal-pricetag'),
+    clearCart = document.querySelector('.clear-cart');
+
+function renderCart() {
+
+  modalBody.textContent = '';
+
+  cart.forEach(function(item) {
+
+    let {                                           //добавление в массив корзины объекта товара
+      id,
+      title,
+      cost,
+      count
+    } = item;
+    
+    let itemCart = `
+                    <div class="food-row">
+                    <span class="food-name">${title}</span>
+                    <strong class="food-price">${cost}</strong>
+                    <div class="food-counter">
+                      <button class="counter-button counter-minus" data-id="${id}">-</button>
+                      <span class="counter">${count}</span>
+                      <button class="counter-button counter-plus" data-id="${id}">+</button>
+                    </div>
+                    </div>
+    `;
+  
+    modalBody.insertAdjacentHTML('beforeend', itemCart);
+  })
+  
+  const totalPrice = cart.reduce(function(result, item) {               //подсчет суммы
+    return result + (parseFloat(item.cost)) * item.count;
+  }, 0)
+
+  modalPricetag.innerHTML = totalPrice;
+
+}
+
+
+
+const changeCount = e => {                                                 //счетчик количества
+  let target = e.target;
+
+  if(target.classList.contains('counter-button')) {
+
+    const food = cart.find(function(item) {
+      return item.id === target.dataset.id;
+    })
+
+    if(target.classList.contains('counter-plus')) {
+      food.count++;
+      renderCart();
+    } 
+    if(target.classList.contains('counter-minus')) {
+      food.count--;
+      if(food.count === 0) {                                                 //удалить товар, если счетчик меньше нуля
+        cart.splice(cart.indexOf(food), 1)
+      }
+      renderCart();
+    }
+
+  }
+
+
+}
+
+modalBody.addEventListener('click', changeCount) ;                         //счетчик количества
+clearCart.addEventListener('click', () => {                                   //очистка корзины
+ cart.length = 0;
+ renderCart();
+})                                       
+
+
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
